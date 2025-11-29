@@ -1,8 +1,6 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { SubNiche } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const subNicheSchema: Schema = {
   type: Type.ARRAY,
   items: {
@@ -54,6 +52,16 @@ const subNicheSchema: Schema = {
 
 export const generateSubNiches = async (topic: string, location?: string, country: string = "Brasil"): Promise<SubNiche[]> => {
   try {
+    // Validação de Segurança da API KEY
+    const apiKey = process.env.API_KEY;
+    
+    if (!apiKey || apiKey.length < 10 || apiKey.includes("API_KEY")) {
+      console.error("ERRO CRÍTICO: API Key não encontrada ou inválida.");
+      throw new Error("MISSING_API_KEY");
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
     let locationPrompt = `CONTEXTO GEOGRÁFICO: PAÍS: ${country}.`;
     
     if (location && location.trim() !== "") {
@@ -110,7 +118,17 @@ export const generateSubNiches = async (topic: string, location?: string, countr
       }
       
       try {
-        return JSON.parse(cleanText) as SubNiche[];
+        // Garantir que a resposta seja um objeto JSON válido ou array
+        const parsed = JSON.parse(cleanText);
+        
+        // Se a IA devolver um objeto { suggestions: [...] } ou similar, tentar extrair o array
+        if (!Array.isArray(parsed) && parsed.items) return parsed.items;
+        if (!Array.isArray(parsed) && parsed.suggestions) return parsed.suggestions;
+        if (Array.isArray(parsed)) return parsed;
+
+        // Se falhar a estrutura
+        console.log("Estrutura inesperada:", parsed);
+        return parsed as SubNiche[]; 
       } catch (parseError) {
         console.error("Erro ao fazer parse do JSON:", parseError);
         console.log("Texto recebido:", cleanText);
@@ -119,8 +137,11 @@ export const generateSubNiches = async (topic: string, location?: string, countr
     }
     
     throw new Error("Nenhuma resposta gerada.");
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao gerar nichos:", error);
+    if (error.message === "MISSING_API_KEY") {
+      throw error;
+    }
     throw error;
   }
 };
