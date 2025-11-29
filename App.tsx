@@ -4,7 +4,7 @@ import { SearchBox } from './components/SearchBox';
 import { NicheCard } from './components/NicheCard';
 import { generateSubNiches } from './services/geminiService';
 import { SearchState } from './types';
-import { LayoutGrid, AlertCircle, Printer, MonitorDown, Copy, Check, X, Smartphone, Monitor, Share2, Link } from 'lucide-react';
+import { LayoutGrid, AlertCircle, Printer, MonitorDown, Copy, Check, X, Smartphone, Monitor, Share2, Link, MessageCircle, Send } from 'lucide-react';
 
 const App: React.FC = () => {
   const [state, setState] = useState<SearchState>({
@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [reportCopied, setReportCopied] = useState(false);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [searchContext, setSearchContext] = useState({ term: '', location: '', country: 'Brasil' });
 
@@ -56,13 +57,32 @@ const App: React.FC = () => {
       url: window.location.href
     };
 
-    if (navigator.share) {
+    // Try native share ONLY on mobile devices where it's robust
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    if (isMobile && navigator.share) {
       try {
         await navigator.share(shareData);
       } catch (err) {
-        console.log('Error sharing:', err);
+        console.log('User cancelled share or error:', err);
       }
     } else {
+      // On Desktop or fallback, show custom modal
+      setShowShareModal(true);
+    }
+  };
+
+  const handleSocialShare = (platform: 'whatsapp' | 'telegram' | 'twitter' | 'copy') => {
+    const text = encodeURIComponent('Encontre nichos virais para YouTube com IA! 👇');
+    const url = encodeURIComponent(window.location.href);
+
+    if (platform === 'whatsapp') {
+      window.open(`https://api.whatsapp.com/send?text=${text}%20${url}`, '_blank');
+    } else if (platform === 'telegram') {
+      window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank');
+    } else if (platform === 'twitter') {
+      window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+    } else if (platform === 'copy') {
       navigator.clipboard.writeText(window.location.href);
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
@@ -177,11 +197,11 @@ const App: React.FC = () => {
           <div className="flex items-center gap-3">
              <button
                onClick={handleShareApp}
-               className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-full text-xs font-bold transition-all border border-slate-700"
+               className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-full text-xs font-bold transition-all border border-slate-700 hover:border-brand-500"
                title="Compartilhar App"
              >
-                {linkCopied ? <Check className="w-3 h-3 text-green-400" /> : <Share2 className="w-3 h-3" />}
-                <span>{linkCopied ? 'Link Copiado!' : 'COMPARTILHAR'}</span>
+                <Share2 className="w-3 h-3" />
+                <span>COMPARTILHAR</span>
              </button>
 
              {!isInstalled && (
@@ -253,6 +273,51 @@ const App: React.FC = () => {
             </div>
         )}
       </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+           <div className="bg-slate-800 rounded-2xl border border-slate-700 max-w-sm w-full p-6 shadow-2xl relative animate-fade-in-up">
+              <button 
+                  onClick={() => setShowShareModal(false)}
+                  className="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-700/50 p-1 rounded-full hover:bg-slate-700 transition-colors"
+              >
+                  <X className="w-5 h-5" />
+              </button>
+              
+              <div className="text-center mb-6">
+                 <h3 className="text-xl font-bold text-white mb-2">Compartilhar App</h3>
+                 <p className="text-slate-400 text-sm">Mostre essa ferramenta para seus amigos!</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                 <button 
+                   onClick={() => handleSocialShare('whatsapp')}
+                   className="flex items-center justify-center gap-3 w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold rounded-xl transition-all shadow-lg active:scale-95"
+                 >
+                   <MessageCircle className="w-5 h-5" />
+                   WhatsApp
+                 </button>
+
+                 <button 
+                   onClick={() => handleSocialShare('telegram')}
+                   className="flex items-center justify-center gap-3 w-full py-3 bg-[#0088cc] hover:bg-[#0077b5] text-white font-bold rounded-xl transition-all shadow-lg active:scale-95"
+                 >
+                   <Send className="w-5 h-5" />
+                   Telegram
+                 </button>
+
+                 <button 
+                   onClick={() => handleSocialShare('copy')}
+                   className="flex items-center justify-center gap-3 w-full py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-all border border-slate-600 active:scale-95"
+                 >
+                   {linkCopied ? <Check className="w-5 h-5 text-green-400" /> : <Link className="w-5 h-5" />}
+                   {linkCopied ? 'Link Copiado!' : 'Copiar Link'}
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
 
       {/* Install Instruction Modal */}
       {showInstallHelp && (
