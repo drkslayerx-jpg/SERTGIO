@@ -101,7 +101,21 @@ export const generateSubNiches = async (topic: string, location?: string, countr
     });
 
     if (response.text) {
-      return JSON.parse(response.text) as SubNiche[];
+      // CLEANUP BUG FIX: Remove markdown code blocks if the AI adds them (common issue)
+      let cleanText = response.text.trim();
+      if (cleanText.startsWith('```json')) {
+        cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanText.startsWith('```')) {
+        cleanText = cleanText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      try {
+        return JSON.parse(cleanText) as SubNiche[];
+      } catch (parseError) {
+        console.error("Erro ao fazer parse do JSON:", parseError);
+        console.log("Texto recebido:", cleanText);
+        throw new Error("Erro ao processar resposta da IA. Tente novamente.");
+      }
     }
     
     throw new Error("Nenhuma resposta gerada.");

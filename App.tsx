@@ -4,7 +4,7 @@ import { SearchBox } from './components/SearchBox';
 import { NicheCard } from './components/NicheCard';
 import { generateSubNiches } from './services/geminiService';
 import { SearchState } from './types';
-import { LayoutGrid, AlertCircle, Printer, MonitorDown, Copy, Check, X, Smartphone, Monitor } from 'lucide-react';
+import { LayoutGrid, AlertCircle, Printer, MonitorDown, Copy, Check, X, Smartphone, Monitor, Share2, Link } from 'lucide-react';
 
 const App: React.FC = () => {
   const [state, setState] = useState<SearchState>({
@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [reportCopied, setReportCopied] = useState(false);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [searchContext, setSearchContext] = useState({ term: '', location: '', country: 'Brasil' });
 
   // Check if already in standalone mode
@@ -48,6 +49,26 @@ const App: React.FC = () => {
     }
   };
 
+  const handleShareApp = async () => {
+    const shareData = {
+      title: 'NichoTube Finder',
+      text: 'Encontre nichos virais e seguros para o YouTube com Inteligência Artificial!',
+      url: window.location.href
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Error sharing:', err);
+      }
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    }
+  };
+
   const handleSearch = async (term: string, location: string, country: string) => {
     setState({ isLoading: true, error: null, data: null });
     setSearchContext({ term, location, country });
@@ -57,7 +78,7 @@ const App: React.FC = () => {
     } catch (error) {
       setState({ 
         isLoading: false, 
-        error: "Ocorreu um erro ao analisar o mercado. Verifique sua chave de API ou tente novamente mais tarde.", 
+        error: "Não foi possível gerar os nichos agora. Tente simplificar o termo ou tente novamente em alguns instantes.", 
         data: null 
       });
     }
@@ -145,7 +166,7 @@ const App: React.FC = () => {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <nav className="flex justify-between items-center mb-16">
+        <nav className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-16">
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-brand-600 to-pink-600 p-2 rounded-lg shadow-lg shadow-brand-500/20">
                 <LayoutGrid className="w-5 h-5 text-white" />
@@ -154,6 +175,15 @@ const App: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-3">
+             <button
+               onClick={handleShareApp}
+               className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-full text-xs font-bold transition-all border border-slate-700"
+               title="Compartilhar App"
+             >
+                {linkCopied ? <Check className="w-3 h-3 text-green-400" /> : <Share2 className="w-3 h-3" />}
+                <span>{linkCopied ? 'Link Copiado!' : 'COMPARTILHAR'}</span>
+             </button>
+
              {!isInstalled && (
                 <button 
                     onClick={handleInstallClick}
@@ -163,9 +193,6 @@ const App: React.FC = () => {
                     <span>INSTALAR APP</span>
                 </button>
              )}
-            <span className="text-xs font-medium px-3 py-1 bg-brand-900/20 border border-brand-700/30 rounded-full text-brand-300 hidden sm:inline-block">
-                AI Gemini 2.5
-            </span>
           </div>
         </nav>
 
@@ -221,7 +248,7 @@ const App: React.FC = () => {
         {!state.data && !state.isLoading && !state.error && (
             <div className="text-center mt-20 opacity-50">
                 <p className="text-sm text-slate-500">
-                    Experimente buscar por: "Marketing Digital", "Pets", "ASMR", escolha o País e Localidade.
+                    Experimente buscar por: "Histórias de Mistério", "Curiosidades", "Tecnologia", escolha o País.
                 </p>
             </div>
         )}
