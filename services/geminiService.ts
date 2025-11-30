@@ -52,14 +52,10 @@ const subNicheSchema: Schema = {
 
 export const generateSubNiches = async (topic: string, location?: string, country: string = "Brasil"): Promise<SubNiche[]> => {
   try {
-    // Validação de Segurança da API KEY
-    const apiKey = process.env.API_KEY;
+    // Tenta obter a chave, mas não bloqueia se estiver vazia (permite tentativa de execução)
+    const apiKey = process.env.API_KEY || '';
     
-    if (!apiKey || apiKey.length < 10 || apiKey.includes("API_KEY")) {
-      console.error("ERRO CRÍTICO: API Key não encontrada ou inválida.");
-      throw new Error("MISSING_API_KEY");
-    }
-
+    // Inicializa o cliente mesmo se a chave estiver vazia (o erro virá da API do Google se falhar)
     const ai = new GoogleGenAI({ apiKey });
 
     let locationPrompt = `CONTEXTO GEOGRÁFICO: PAÍS: ${country}.`;
@@ -139,9 +135,7 @@ export const generateSubNiches = async (topic: string, location?: string, countr
     throw new Error("Nenhuma resposta gerada.");
   } catch (error: any) {
     console.error("Erro ao gerar nichos:", error);
-    if (error.message === "MISSING_API_KEY") {
-      throw error;
-    }
+    // Erros serão tratados genericamente no frontend
     throw error;
   }
 };

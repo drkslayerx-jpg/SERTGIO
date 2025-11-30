@@ -96,12 +96,9 @@ const App: React.FC = () => {
       const data = await generateSubNiches(term, location, country);
       setState({ isLoading: false, error: null, data });
     } catch (error: any) {
-      let errorMessage = "Não foi possível gerar os nichos agora. Tente novamente.";
+      // Mensagem de erro padrão amigável, sem detalhes técnicos de API KEY
+      const errorMessage = "O sistema está sobrecarregado ou indisponível no momento. Tente novamente em alguns segundos.";
       
-      if (error.message === "MISSING_API_KEY") {
-        errorMessage = "MISSING_KEY"; // Código especial para renderizar UI de ajuda
-      }
-
       setState({ 
         isLoading: false, 
         error: errorMessage, 
@@ -225,27 +222,10 @@ const App: React.FC = () => {
         <SearchBox onSearch={handleSearch} isLoading={state.isLoading} />
 
         {state.error && (
-          <div className={`max-w-3xl mx-auto mb-12 p-6 rounded-xl border flex gap-4 animate-fade-in ${state.error === 'MISSING_KEY' ? 'bg-yellow-900/20 border-yellow-700/50' : 'bg-red-900/20 border-red-900/50'}`}>
-            <AlertCircle className={`w-6 h-6 flex-shrink-0 ${state.error === 'MISSING_KEY' ? 'text-yellow-500' : 'text-red-400'}`} />
+          <div className="max-w-3xl mx-auto mb-12 p-6 rounded-xl border flex gap-4 animate-fade-in bg-red-900/20 border-red-900/50">
+            <AlertCircle className="w-6 h-6 flex-shrink-0 text-red-400" />
             <div>
-              {state.error === 'MISSING_KEY' ? (
-                <div className="text-yellow-100">
-                  <h3 className="font-bold text-lg mb-2">Configuração Necessária (Vercel)</h3>
-                  <p className="mb-4">O App está online, mas a <strong>Chave da API (API Key)</strong> não foi configurada no servidor.</p>
-                  <div className="bg-black/40 p-4 rounded-lg text-sm font-mono text-slate-300">
-                    <p className="mb-2 font-bold text-white">Como resolver:</p>
-                    <ol className="list-decimal pl-4 space-y-1">
-                      <li>Vá no painel do <strong>Vercel</strong> → Settings.</li>
-                      <li>Clique em <strong>Environment Variables</strong>.</li>
-                      <li>Adicione a chave: <code>API_KEY</code></li>
-                      <li>Cole sua chave do Gemini no valor.</li>
-                      <li>Redeploy o projeto.</li>
-                    </ol>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-red-200 text-lg">{state.error}</p>
-              )}
+              <p className="text-red-200 text-lg">{state.error}</p>
             </div>
           </div>
         )}
